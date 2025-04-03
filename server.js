@@ -2,14 +2,16 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const uploadRoutes = require("./plump");
+const path = require("path");
 
 const app = express();
 const router = express.Router();
-
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.json());
 app.use("/api", router);
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
@@ -21,7 +23,7 @@ const contactEmail = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS   // App Password
   }
 });
-
+app.use("/api", uploadRoutes);
 contactEmail.verify((error) => {
   if (error) {
     console.log("Error setting up email transport:", error);
@@ -49,6 +51,7 @@ router.post("/contact", (req, res) => {
     // res.send("test");
     
   });
+  
   
 
   contactEmail.sendMail(mailOptions, (error) => {

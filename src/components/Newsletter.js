@@ -1,46 +1,66 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Col, Row, Alert } from "react-bootstrap";
+import axios from "axios";
 
-export const Newsletter = ({ status, message, onValidated }) => {
-  const [email, setEmail] = useState('');
+export const Newsletter = () => {
+  const [file, setFile] = useState(null);
+  const [message, setMessage] = useState("");
+  const [preview, setPreview] = useState(null);
 
-  useEffect(() => {
-    if (status === 'success') clearFields();
-  }, [status])
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile)); // Show image preview
+    }
+  };
 
-  const handleSubmit = (e) => {
+  // Handle file upload
+  const handleUpload = async (e) => {
     e.preventDefault();
-    email &&
-    email.indexOf("@") > -1 &&
-    onValidated({
-      EMAIL: email
-    })
-  }
+    if (!file) {
+      setMessage("Please select an image first!");
+      return;
+    }
 
-  const clearFields = () => {
-    setEmail('');
-  }
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setMessage(res.data.message);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "File upload failed");
+    }
+  };
 
   return (
-      <Col lg={12}>
-        <div className="newsletter-bx wow slideInUp">
-          <Row>
-            <Col lg={12} md={6} xl={5}>
-              <h3>Subscribe to our Newsletter<br></br> & Never miss latest updates</h3>
-              {status === 'sending' && <Alert>Sending...</Alert>}
-              {status === 'error' && <Alert variant="danger">{message}</Alert>}
-              {status === 'success' && <Alert variant="success">{message}</Alert>}
-            </Col>
-            <Col md={6} xl={7}>
-              <form onSubmit={handleSubmit}>
-                <div className="new-email-bx">
-                  <input value={email} type="email" onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" />
-                  <button type="submit">Submit</button>
-                </div>
-              </form>
-            </Col>
-          </Row>
-        </div>
-      </Col>
-  )
-}
+    <Col lg={12}>
+      <div className="newsletter-bx wow slideInUp">
+        <Row>
+          <Col lg={12} md={6} xl={5}>
+            <h3>Upload Your Image<br /> & Share with Us</h3>
+            {message && <Alert variant={message.includes("success") ? "success" : "danger"}>{message}</Alert>}
+          </Col>
+          <Col md={6} xl={7}>
+            <form onSubmit={handleUpload}>
+              <div className="new-email-bx">
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+                <button type="submit">Upload</button>
+              </div>
+            </form>
+            {preview && (
+              <div className="image-preview">
+                <img src={preview} alt="Preview" style={{ width: "100px", marginTop: "10px", borderRadius: "5px" }} />
+              </div>
+            )}
+          </Col>
+        </Row>
+      </div>
+    </Col>
+  );
+};
